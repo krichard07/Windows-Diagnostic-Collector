@@ -1,0 +1,49 @@
+Windows Diagnostic Collector
+Run time: 2026-09-23_20-15-00
+Computer name: DEMO-PC-01
+Windows: Microsoft Windows 11 Pro
+Version: 10.0.26100
+Build: 26100
+RAM: 16 GB
+C: total space: 476.82 GB
+C: free space: 182.45 GB
+Uptime: 3 days, 4 hours, 12 minutes
+
+--- NETWORK CONFIGURATION ---
+
+Interface   IPv4          Gateway       DNS
+---------   ----          -------       ---
+Ethernet    192.0.2.25    192.0.2.1     192.0.2.53
+
+--- DNS TEST ---
+Host: www.microsoft.com
+Result: PASS - 203.0.113.10
+
+--- CONNECTIVITY TEST ---
+Target: 8.8.8.8
+Result: PASS
+
+--- GROUP POLICY RESULT ---
+Demo output only.
+Applied Group Policy Objects:
+    Example Workstation Policy
+    Example Security Policy
+
+--- EVENT LOG ERRORS - LAST 24 HOURS ---
+
+TimeCreated      : 09/23/2026 10:21:00
+LogName          : System
+ProviderName     : ExampleProvider
+Id               : 1001
+LevelDisplayName : Error
+Message          : Example diagnostic event for demonstration purposes.
+
+--- PENDING REBOOT ---
+Restart required: NO
+
+--- SCCM CLIENT ---
+Client detected: YES
+CcmExec service: Running
+Client version: 5.00.0000.0000
+Assigned site: LAB
+WMI/CIM namespace: Available
