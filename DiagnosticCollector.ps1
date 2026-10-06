@@ -1,3 +1,61 @@
+<#
+.SYNOPSIS
+Collect diagnostic information from a Windows computer.
+
+.DESCRIPTION
+Collects system, network, DNS, connectivity, Group Policy, Event Log,
+pending reboot and SCCM client information from the local Windows computer.
+
+The results are written to a timestamped text report.
+
+.PARAMETER DnsTestHost
+Hostname used for DNS resolution testing.
+Default: www.microsoft.com
+
+.PARAMETER ConnectivityTarget
+Host or IP address used for the connectivity test.
+
+.PARAMETER EventLogLookbackHours
+Number of hours to look back when collecting Critical and Error events.
+
+.PARAMETER MaxEvents
+Maximum number of Event Log entries to include in the report.
+Default: 50
+
+.PARAMETER ReportDirectory
+Directory where the diagnostic report is saved.
+Default: reports folder inside the script directory.
+
+.EXAMPLE
+.\DiagnosticCollector.ps1 -EventLogLookbackHours 12 -MaxEvents 25
+
+Collects up to 25 Critical and Error events from the last 12 hours.
+
+.EXAMPLE
+.\DiagnosticCollector.ps1 -DnsTestHost "localhost" -ConnectivityTarget "127.0.0.1"
+
+Runs the DNS and connectivity tests using custom targets.
+
+.EXAMPLE
+.\DiagnosticCollector.ps1 -ReportDirectory ".\test-reports"
+
+Saves the report to a custom directory.
+#>
+
+param(
+	[string]$DnsTestHost = "www.microsoft.com",
+
+	[string]$ConnectivityTarget = "8.8.8.8",
+
+	[ValidateRange(1, 168)]
+	[int]$EventLogLookbackHours = 24,
+
+	[ValidateRange(1, 500)]
+	[int]$MaxEvents = 50,
+
+	[string]$ReportDirectory = (Join-Path $PSScriptRoot "reports")
+)
+
 $Timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
 
 $OS = Get-CimInstance Win32_OperatingSystem
@@ -5,8 +63,6 @@ $OS = Get-CimInstance Win32_OperatingSystem
 $ComputerSystem = Get-CimInstance Win32_ComputerSystem
 $Disk = Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='C:'"
 $Uptime = New-TimeSpan -Start $OS.LastBootUpTime -End (Get-Date)
-
-$ReportDirectory = Join-Path $PSScriptRoot "reports"
 
 if (-not (Test-Path $ReportDirectory)) {
     New-Item -ItemType Directory -Path $ReportDirectory | Out-Null
@@ -27,8 +83,6 @@ $NetworkInfo = Get-NetIPConfiguration |
     Format-Table -AutoSize |
     Out-String
 
-$DnsTestHost = "www.microsoft.com"
-
 try {
     $DnsResult = Resolve-DnsName $DnsTestHost -Type A -ErrorAction Stop |
         Select-Object -First 1
@@ -38,8 +92,6 @@ try {
 catch {
     $DnsStatus = "FAIL - $($_.Exception.Message)"
 }
-
-$ConnectivityTarget = "8.8.8.8"
 
 $PingResult = Test-Connection `
     -ComputerName $ConnectivityTarget `
@@ -55,14 +107,14 @@ else {
 
 $GpResult = gpresult /r 2>&1 | Out-String
 
-$EventLogStart = (Get-Date).AddHours(-24)
+$EventLogStart = (Get-Date).AddHours(-$EventLogLookbackHours)
 
 try {
     $EventLogErrors = Get-WinEvent -FilterHashtable @{
         LogName   = @("System", "Application")
         Level     = @(1, 2)
         StartTime = $EventLogStart
-    } -MaxEvents 50 -ErrorAction Stop |
+    } -MaxEvents $MaxEvents -ErrorAction Stop |
         Select-Object TimeCreated, LogName, ProviderName, Id, LevelDisplayName, Message |
         Format-List |
         Out-String
